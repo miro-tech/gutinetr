@@ -8,10 +8,9 @@ import io
 import os
 
 # --- КОНФИГУРАЦИЯ ---
-GIST_ID = "a66814180363b8e34a03eb7e1b532b59"
+GIST_ID = "a66814180363b8e34a03eb7e1b532b59" # Замените на ваш ID
 GITHUB_TOKEN = os.environ.get("GIST_TOKEN")
 
-# Добавляем префикс в каждый словарь
 TARGETS = [
     {
         "url": "https://raw.githubusercontent.com/s741dev/8cf923f83818315e7b47bc635fe87b93/main/1d1619b2c966003e235aad70010c113e",
@@ -24,6 +23,16 @@ TARGETS = [
         "prefix": "netr"
     }
 ]
+
+def update_gist(content):
+    url = f"https://api.github.com/gists/{GIST_ID}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    data = {"files": {"vless_links.txt": {"content": content}}}
+    response = requests.patch(url, headers=headers, json=data)
+    if response.status_code == 200:
+        print("Gist успешно обновлен!")
+    else:
+        print(f"Ошибка при обновлении: {response.status_code} - {response.text}")
 
 def get_vless_links(target):
     url = target["url"]
@@ -56,16 +65,14 @@ def get_vless_links(target):
             
             vnext = proxy['settings']['vnext'][0]
             vnext['address'] = "8.6.112.0"
-            
             user = vnext['users'][0]
             stream = proxy['streamSettings']
             tls = stream.get('tlsSettings', {})
-            
-            # Определяем настройки сети в зависимости от типа
             net = stream.get('network', 'ws')
+            
+            # Логика параметров
             path = '/'
             host = ''
-            
             if net == 'xhttp':
                 xh = stream.get('xhttpSettings', {})
                 path = xh.get('path', '/')
@@ -75,31 +82,20 @@ def get_vless_links(target):
                 path = ws.get('path', '/')
                 host = ws.get('headers', {}).get('Host', '')
 
-            # Универсальный список параметров
             params = [
-                "allowInsecure=1",
-                "encryption=none",
-                f"fp={tls.get('fingerprint', 'chrome')}",
-                f"host={host}",
-                "mode=stream-one" if net == 'xhttp' else None, # mode только для xhttp
-                f"path={path}",
-                f"security={stream.get('security', 'none')}",
-                f"sni={tls.get('serverName', '')}",
-                f"type={net}"
+                "allowInsecure=1", "encryption=none", f"fp={tls.get('fingerprint', 'chrome')}",
+                f"host={host}", "mode=stream-one" if net == 'xhttp' else None,
+                f"path={path}", f"security={stream.get('security', 'none')}",
+                f"sni={tls.get('serverName', '')}", f"type={net}"
             ]
-            
-            # Удаляем None, если параметр не был добавлен
             params = [p for p in params if p is not None]
-            
             remarks = conf.get('remarks', 'server')
-            # Используем динамический префикс
             links.append(f"vless://{user['id']}@{vnext['address']}:{vnext['port']}?{'&'.join(params)}#{prefix}-{remarks}")
         return links
     except Exception as e:
-        print(f"Ошибка: {e}")
+        print(f"Ошибка обработки: {e}")
         return []
 
-# --- ОСТАЛЬНАЯ ЛОГИКА ОБНОВЛЕНИЯ GIST ---
 if __name__ == "__main__":
     all_links = ""
     for target in TARGETS:
@@ -108,3 +104,6 @@ if __name__ == "__main__":
     
     if all_links and GITHUB_TOKEN:
         update_gist(all_links)
+    else:
+        print("Ссылки не найдены или отсутствует токен.")
+        
