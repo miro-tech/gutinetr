@@ -1,0 +1,26 @@
+name: Update VLESS Gist
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Запуск каждый день в 00:00
+  workflow_dispatch:     # Позволяет запустить вручную из вкладки Actions
+
+jobs:
+  update-gist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Update Gist
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        run: python update_gist.py
