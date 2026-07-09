@@ -59,11 +59,10 @@ def get_vless_links(target):
         if process.returncode != 0: return []
 
         with gzip.GzipFile(fileobj=io.BytesIO(decrypted_bytes)) as f:
-            data = json.loads(f.read().decode('utf-8'))
-            
-                links = []
-        configs = data.get("configs", {}).get("normal", [])
+    data = json.loads(f.read().decode("utf-8"))
 
+        links = []
+        configs = data.get("configs", {}).get("normal", [])
         for item in configs:
             config = item.get("config")
 
