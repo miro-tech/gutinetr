@@ -58,44 +58,94 @@ def get_vless_links(target):
         
         if process.returncode != 0: return []
 
-        with gzip.GzipFile(fileobj=io.BytesIO(decrypted_bytes)) as f:
+                with gzip.GzipFile(fileobj=io.BytesIO(decrypted_bytes)) as f:
             data = json.loads(f.read().decode('utf-8'))
-            
+
         links = []
-        configs = data.get('configs', {}).get('normal', [])
+        configs = data.get("configs", {}).get("normal", [])
+
         for item in configs:
-            conf = json.loads(item['config']) if isinstance(item.get('config'), str) else item.get('config')
-            proxy = next((o for o in conf.get('outbounds', []) if o.get('tag') == 'proxy'), None)
-            if not proxy: continue
-            
-            vnext = proxy['settings']['vnext'][0]
-            vnext['address'] = "8.6.112.0"
-            user = vnext['users'][0]
-            stream = proxy['streamSettings']
-            tls = stream.get('tlsSettings', {})
-            net = stream.get('network', 'ws')
-            
-            # Логика параметров
-            path = '/'
-            host = ''
-            if net == 'xhttp':
-                xh = stream.get('xhttpSettings', {})
-                path = xh.get('path', '/')
-                host = xh.get('headers', {}).get('Host', tls.get('serverName', ''))
-            elif net == 'ws':
-                ws = stream.get('wsSettings', {})
-                path = ws.get('path', '/')
-                host = ws.get('headers', {}).get('Host', '')
+            config = item.get("config")
+            if not config:
+                continue
+
+            # 1. Уже готовая ссылка
+            if isinstance(config, str):
+                config = config.strip()
+
+                if config.startswith((
+                    "vless://",
+                    "vmess://",
+                    "trojan://",
+                    "ss://",
+                    "hy2://",
+                    "hysteria://",
+                    "tuic://"
+                )):
+                    links.append(config)
+                    continue
+
+            # 2. JSON-конфиг
+            try:
+                conf = json.loads(config) if isinstance(config, str) else config
+            except Exception:
+                continue
+
+            proxy = next(
+                (o for o in conf.get("outbounds", [])
+                 if o.get("tag") == "proxy"),
+                None
+            )
+
+            if not proxy:
+                continue
+
+            vnext = proxy["settings"]["vnext"][0]
+            vnext["address"] = "8.6.112.0"
+
+            user = vnext["users"][0]
+            stream = proxy["streamSettings"]
+
+            tls = stream.get("tlsSettings", {})
+            net = stream.get("network", "ws")
+
+            path = "/"
+            host = ""
+
+            if net == "xhttp":
+                xh = stream.get("xhttpSettings", {})
+                path = xh.get("path", "/")
+                host = xh.get("headers", {}).get(
+                    "Host",
+                    tls.get("serverName", "")
+                )
+
+            elif net == "ws":
+                ws = stream.get("wsSettings", {})
+                path = ws.get("path", "/")
+                host = ws.get("headers", {}).get("Host", "")
 
             params = [
-                "allowInsecure=1", "encryption=none", f"fp={tls.get('fingerprint', 'chrome')}",
-                f"host={host}", "mode=stream-one" if net == 'xhttp' else None,
-                f"path={path}", f"security={stream.get('security', 'none')}",
-                f"sni={tls.get('serverName', '')}", f"type={net}"
+                "allowInsecure=1",
+                "encryption=none",
+                f"fp={tls.get('fingerprint', 'chrome')}",
+                f"host={host}",
+                "mode=stream-one" if net == "xhttp" else None,
+                f"path={path}",
+                f"security={stream.get('security', 'none')}",
+                f"sni={tls.get('serverName', '')}",
+                f"type={net}"
             ]
+
             params = [p for p in params if p is not None]
-            remarks = conf.get('remarks', 'server')
-            links.append(f"vless://{user['id']}@{vnext['address']}:{vnext['port']}?{'&'.join(params)}#{prefix}-{remarks}")
+
+            remarks = conf.get("remarks", "server")
+
+            links.append(
+                f"vless://{user['id']}@{vnext['address']}:{vnext['port']}?"
+                f"{'&'.join(params)}#{prefix}-{remarks}"
+            )
+
         return links
     except Exception as e:
         print(f"Ошибка обработки: {e}")
