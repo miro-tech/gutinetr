@@ -56,9 +56,11 @@ def get_vless_links(target):
         )
         decrypted_bytes, err = process.communicate(input=ciphertext)
         
-        if process.returncode != 0: return []
+                if process.returncode != 0: 
+            return []
 
-                with gzip.GzipFile(fileobj=io.BytesIO(decrypted_bytes)) as f:
+        # Исправлен отступ: следующая строка должна быть на уровне с if
+        with gzip.GzipFile(fileobj=io.BytesIO(decrypted_bytes)) as f:
             data = json.loads(f.read().decode('utf-8'))
 
         links = []
