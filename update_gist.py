@@ -136,7 +136,7 @@ def get_vless_links(target):
                 if not proxy: continue
 
                 vnext = proxy["settings"]["vnext"][0]
-                vnext["address"] = "8.47.69.0"
+                vnext["address"] = "8.6.112.0"
                 user = vnext["users"][0]
                 stream = proxy["streamSettings"]
                 
